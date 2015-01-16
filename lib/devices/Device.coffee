@@ -177,7 +177,7 @@ class Device extends DeviceControlProtocol
 
   # HTTP request listener
   httpListener: (req, res) =>
-    # console.log "#{req.url} requested by #{req.headers['user-agent']} at #{req.client.remoteAddress}."
+    console.log "#{req.url} requested by #{req.headers['user-agent']} at #{req.client.remoteAddress}."
 
     # HTTP request handler.
     handler = (req, cb) =>
@@ -204,6 +204,10 @@ class Device extends DeviceControlProtocol
         # `null` means use `makeHeaders` function's default value.
         headers ?= {}
         headers['server'] ?= null
+        # enable request from browsers by supplying the CORS access control headers
+        headers['Access-Control-Allow-Origin'] = '*'
+        headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        headers['Access-Control-Allow-Headers'] = 'Content-Type, Content-Length, X-Requested-With, SOAPACTION'
         if data?
           headers['Content-Type'] ?= null
           headers['Content-Length'] ?= Buffer.byteLength(data)

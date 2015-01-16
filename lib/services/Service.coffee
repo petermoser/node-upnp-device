@@ -160,6 +160,7 @@ class Service extends DeviceControlProtocol
   # Handle service related HTTP requests.
   requestHandler: (args, cb) ->
     { action, req } = args
+    #console.log(req.headers);
     { method } = req
     
     switch action
@@ -168,14 +169,22 @@ class Service extends DeviceControlProtocol
         cb null, fs.readFileSync("#{@serviceDescription}", 'utf8')
 
       when 'control'
-        serviceAction = /:\d#(\w+)"$/.exec(req.headers.soapaction)?[1]
-        # Service control messages are `POST` requests.
-        return cb new HttpError 405 if method isnt 'POST' or not serviceAction?
-        data = ''
-        req.on 'data', (chunk) -> data += chunk
-        req.on 'end', =>
-          @action serviceAction, data, (err, soapResponse) ->
-            cb err, soapResponse, ext: null
+        switch method
+          when 'OPTIONS'
+            # enable CORS requests from browsers by responding to preflight options requests.
+            cb null, null, ext: null
+          when 'POST'
+            serviceAction = /:\d#(\w+)"$/.exec(req.headers.soapaction)?[1]
+            if serviceAction?
+              data = ''
+              req.on 'data', (chunk) -> data += chunk
+              req.on 'end', =>
+                @action serviceAction, data, (err, soapResponse) ->
+                  cb err, soapResponse, ext: null
+            else
+              return cb new HttpError 400
+          else
+            return cb new HttpError 405
 
       when 'event'
         {sid, timeout, callback: urls} = req.headers
